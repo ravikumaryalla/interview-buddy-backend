@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TransactionType {
+  USAGE
+  REFUND
+  BONUS
+}
+
+enum Feature {
+  SOLVE
+  CHAT
+  TRANSCRIBE
+  REALTIME
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(USER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+
+  credits        Credits?
+  transactions   CreditTransaction[]
+  usageLogs      ApiUsageLog[]
+  passwordResets PasswordReset[]
+
+  @@map("users")
+}
+
+model Credits {
+  id            String @id @default(cuid())
+  userId        String @unique
+  balance       Int    @default(0)
+  lifetimeTotal Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credits")
+}
+
+model CreditTransaction {
+  id          String          @id @default(cuid())
+  userId      String
+  amount      Int
+  type        TransactionType
+  description String
+  createdAt   DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("credit_transactions")
+}
+
+model ApiUsageLog {
+  id              String   @id @default(cuid())
+  userId          String
+  feature         Feature
+  creditsConsumed Int
+  model           String
+  tokenCount      Int      @default(0)
+  responseTimeMs  Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([feature])
+  @@map("api_usage_logs")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("password_resets")
+}
