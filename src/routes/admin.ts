@@ -1,7 +1,9 @@
 import { Router } from 'express'
+import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma'
 import { addCredits, deductCredits } from '../services/credits'
+import { sendWelcomeEmail } from '../services/email'
 
 const router = Router()
 
@@ -60,6 +62,44 @@ router.get('/stats', async (_req, res) => {
       creditsConsumed: f._sum.creditsConsumed ?? 0,
     })),
   })
+})
+
+// POST /api/admin/users — create a user directly (no email verification)
+router.post('/users', async (req, res) => {
+  const schema = z.object({
+    name: z.string().min(2).max(100),
+    email: z.string().email(),
+    password: z.string().min(8).max(100),
+    role: z.enum(['USER', 'ADMIN']).optional().default('USER'),
+    credits: z.number().int().min(0).optional(),
+  })
+
+  const body = schema.safeParse(req.body)
+  if (!body.success) {
+    res.status(400).json({ error: body.error.flatten() })
+    return
+  }
+
+  const { name, email, password, role, credits } = body.data
+
+  const existing = await prisma.user.findUnique({ where: { email } })
+  if (existing) {
+    res.status(409).json({ error: 'Email already in use' })
+    return
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12)
+  const user = await prisma.user.create({
+    data: { name, email, passwordHash, role },
+    select: { id: true, name: true, email: true, role: true, createdAt: true },
+  })
+
+  const initialCredits = credits ?? Number(process.env.FREE_CREDITS_ON_SIGNUP || 20)
+  await addCredits(user.id, initialCredits, 'BONUS', 'Admin-created account bonus credits')
+
+  await sendWelcomeEmail(email, name, initialCredits).catch(() => {})
+
+  res.status(201).json({ ...user, credits: initialCredits })
 })
 
 // GET /api/admin/users?page=1&search=email&status=active
