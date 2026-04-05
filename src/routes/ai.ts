@@ -187,13 +187,21 @@ router.post('/realtime-token', async (req, res) => {
     return
   }
 
-  const { clientSecret } = await createRealtimeToken()
+  try {
+    const { clientSecret } = await createRealtimeToken()
 
-  res.json({ clientSecret })
+    res.json({ clientSecret })
 
-  prisma.apiUsageLog.create({
-    data: { userId, feature: 'REALTIME', creditsConsumed: cost, model: 'gpt-4o-realtime-preview' },
-  }).catch(err => console.error('[AI] realtime log failed:', err))
+    Promise.all([
+      prisma.apiUsageLog.create({
+        data: { userId, feature: 'REALTIME', creditsConsumed: cost, model: 'gpt-4o-realtime-preview' },
+      }),
+      prisma.user.update({ where: { id: userId }, data: { lastActiveAt: new Date() } }),
+    ]).catch(err => console.error('[AI] realtime log failed:', err))
+  } catch (err) {
+    await addCredits(userId, cost, 'REFUND', 'Refund: realtime session failed')
+    throw err
+  }
 })
 
 export default router
