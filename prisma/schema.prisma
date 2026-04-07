@@ -17,6 +17,7 @@ enum TransactionType {
   USAGE
   REFUND
   BONUS
+  PURCHASE
 }
 
 enum Feature {
@@ -40,6 +41,7 @@ model User {
   transactions   CreditTransaction[]
   usageLogs      ApiUsageLog[]
   passwordResets PasswordReset[]
+  orders         Order[]
 
   @@map("users")
 }
@@ -86,6 +88,23 @@ model ApiUsageLog {
   @@index([createdAt])
   @@index([feature])
   @@map("api_usage_logs")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String
+  cashfreeOrderId String   @unique
+  packId          String
+  amount          Float
+  credits         Int
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("orders")
 }
 
 model PasswordReset {
