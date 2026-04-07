@@ -25,7 +25,7 @@ app.use(
       'app://.', // Electron production origin
       'http://localhost:5173',
       'https://admininterviewbuddy.netlify.app',
-      'https://interviewbuddy.techrax.in/',
+      'https://interviewbuddy.techrax.in',
     ],
     credentials: true,
   }),
