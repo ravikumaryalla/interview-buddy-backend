@@ -24,7 +24,7 @@ app.use(
       process.env.FRONTEND_URL || 'http://localhost:5173',
       'app://.', // Electron production origin
       'http://localhost:5173',
-      'https://admininterviewbuddy.netlify.app',
+      'https://admindashboard.techrax.in',
       'https://interviewbuddy.techrax.in',
     ],
     credentials: true,
