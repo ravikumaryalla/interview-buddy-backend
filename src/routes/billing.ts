@@ -10,7 +10,6 @@ const PACKS: Record<
   string,
   { label: string; amount: number; credits: number; currency: string }
 > = {
-  test: { label: 'test', amount: 10, credits: 50, currency: 'INR' },
   starter: { label: 'Starter', amount: 399, credits: 400, currency: 'INR' },
   popular: { label: 'Popular', amount: 599, credits: 650, currency: 'INR' },
   pro: { label: 'Pro', amount: 899, credits: 1000, currency: 'INR' },
